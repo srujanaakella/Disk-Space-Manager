@@ -1,6 +1,6 @@
-
 from files_visualizer import FileSystemTree, visualize, filedialog
 import tkinter as tk
+import customtkinter as ctk
 from tkinter import filedialog
 import os
 import math
@@ -12,6 +12,7 @@ from free_space import DiskSpaceGUI
 from duplicate import DuplicateFilesGUI
 from delete import FileDeletionGUI
 from same_type import FileSelectorGUI
+from disk_space import DiskSpaceVisualizer
 
 def open_directory():
     directory = filedialog.askdirectory()
@@ -35,24 +36,36 @@ def same_file():
     file_selector_gui = FileSelectorGUI()
     file_selector_gui.mainloop()
 
+def disk_space():
+    disk_space_visualisation = DiskSpaceVisualizer()
+    disk_space_visualisation.mainloop()
+
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("File System Manager")
-    root.geometry("300x500")
+    root.geometry("500x450")
+    root.configure(bg="lightblue")
 
-    visualize_button = tk.Button(root, text="Visualize", command=open_directory)
-    visualize_button.pack(padx=10,pady=10)
+    header_label = tk.Label(root, text="Disk Space Manager", font=("Montserrat", 25, "bold"), bg="lightblue")
+    header_label.pack(pady=10)
 
-    free_button = tk.Button(root,text="Show free space", command=check_free)
+    content_label = tk.Label(root, text="A GUI application of all functions to manage your disk space.", 
+                             bg="lightblue", font=("Montserrat", 13,))
+    content_label.pack(pady=10)
+
+    free_button = ctk.CTkButton(root,text="Display Disk Space", command=disk_space, font= ("Montserrat", 13))
     free_button.pack(padx=10,pady=10)
 
-    duplicate_button=tk.Button(root,text="Duplicates",command=check_dup)
+    visualize_button = ctk.CTkButton(root, text="Visualize Files", command=open_directory, font= ("Montserrat", 13))
+    visualize_button.pack(padx=10,pady=10)
+
+    duplicate_button=ctk.CTkButton(root,text="Find Duplicate Files",command=check_dup, font= ("Montserrat", 13))
     duplicate_button.pack(padx=10,pady=10)
 
-    delete_button=tk.Button(root,text="Delete",command=file_del)
+    delete_button=ctk.CTkButton(root,text="Delete Files",command=file_del, font= ("Montserrat", 13))
     delete_button.pack(padx=10,pady=10)
 
-    sametype_button=tk.Button(root,text="Similar Files",command=same_file)
+    sametype_button=ctk.CTkButton(root,text="Find File Type",command=same_file, font= ("Montserrat", 13))
     sametype_button.pack(pady=10)
 
     root.mainloop()

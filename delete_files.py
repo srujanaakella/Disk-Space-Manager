@@ -7,38 +7,41 @@ class FileDeletionGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("File Deletion GUI")
-        self.geometry("400x200")
+        self.geometry("500x300")
 
-        self.label = tk.Label(self, text="Select the directory to delete:")
+        self.label = tk.Label(self, text="Select the file or directory to delete:")
         self.label.pack(pady=10)
 
-        self.directory_var = tk.StringVar()
-        self.directory_entry = tk.Entry(self, textvariable=self.directory_var, width=30)
-        self.directory_entry.pack(pady=5)
+        self.path_var = tk.StringVar()
+        self.path_entry = tk.Entry(self, textvariable=self.path_var, width=40)
+        self.path_entry.pack(pady=5)
 
-        self.browse_button = tk.Button(self, text="Browse", command=self.select_directory)
+        self.browse_button = tk.Button(self, text="Browse", command=self.select_file_or_directory)
         self.browse_button.pack(pady=5)
 
-        self.delete_button = tk.Button(self, text="Delete Directory", command=self.delete_directory)
+        self.delete_button = tk.Button(self, text="Delete", command=self.delete_file_or_directory)
         self.delete_button.pack(pady=10)
 
         self.result_label = tk.Label(self, text="", font=("Helvetica", 12))
         self.result_label.pack()
 
-    def select_directory(self):
-        directory_path = filedialog.askdirectory()
-        if directory_path:
-            self.directory_var.set(directory_path)
+    def select_file_or_directory(self):
+        path = filedialog.askopenfilename()
+        if path:
+            self.path_var.set(path)
 
-    def delete_directory(self):
-        directory = self.directory_var.get()
-        if not directory:
-            self.result_label.config(text="Please select a directory.", fg="red")
+    def delete_file_or_directory(self):
+        path = self.path_var.get()
+        if not path:
+            self.result_label.config(text="Please select a file or directory.", fg="red")
             return
 
         try:
-            shutil.rmtree(directory)
-            self.result_label.config(text=f"Directory '{directory}' and all its contents deleted successfully.", fg="green")
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+                self.result_label.config(text=f"Directory '{path}' and all its contents deleted successfully.", fg="green")
+            else:
+                os.remove(path)
+                self.result_label.config(text=f"File '{path}' deleted successfully.", fg="green")
         except Exception as e:
-            self.result_label.config(text=f"Error deleting directory '{directory}': {e}", fg="red")
-
+            self.result_label.config(text=f"Error deleting '{path}': {e}", fg="red")

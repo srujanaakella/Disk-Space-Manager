@@ -42,6 +42,3 @@ class FileDeletionGUI(tk.Tk):
         except Exception as e:
             self.result_label.config(text=f"Error deleting directory '{directory}': {e}", fg="red")
 
-if __name__ == "__main__":
-    file_deletion_gui = FileDeletionGUI()
-    file_deletion_gui.mainloop()

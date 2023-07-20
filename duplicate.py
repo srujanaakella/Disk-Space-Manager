@@ -73,6 +73,4 @@ class DuplicateFilesGUI(tk.Toplevel):
             for file1, file2 in duplicate_files:
                 self.result_text.insert(tk.END, f"{file1} -- {file2}\n")
 
-if __name__ == "__main__":
-    duplicate_files_gui = DuplicateFilesGUI()
-    duplicate_files_gui.mainloop()
+

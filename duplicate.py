@@ -1,7 +1,7 @@
 import os
 import hashlib
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 
 def get_file_hash(file_path, block_size=65536):
     hasher = hashlib.sha256()
@@ -22,17 +22,24 @@ def find_duplicate_files(directory):
             file_path = os.path.join(dirpath, filename)
             file_hash = get_file_hash(file_path)
             if file_hash in file_hashes:
-                duplicate_files.append((file_path, file_hashes[file_hash]))
+                duplicate_files.append((os.path.basename(file_hashes[file_hash]), os.path.basename(file_path)))
             else:
                 file_hashes[file_hash] = file_path
 
     return duplicate_files
 
+def delete_file(file_path):
+    try:
+        os.remove(file_path)
+        return True
+    except Exception as e:
+        return False
+
 class DuplicateFilesGUI(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("Duplicate Files Finder")
-        self.geometry("500x300")
+        self.geometry("800x600")
 
         self.label = tk.Label(self, text="Select a directory to find duplicate files:")
         self.label.pack(pady=10)
@@ -47,8 +54,21 @@ class DuplicateFilesGUI(tk.Toplevel):
         self.find_button = tk.Button(self, text="Find Duplicate Files", command=self.find_duplicates)
         self.find_button.pack(pady=10)
 
-        self.result_text = tk.Text(self, wrap="word", width=60, height=10)
-        self.result_text.pack()
+        self.result_frame = tk.Frame(self)
+        self.result_frame.pack()
+
+        self.result_text = tk.Text(self.result_frame, wrap="word", width=60, height=15)
+        self.result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.scrollbar = tk.Scrollbar(self.result_frame, command=self.result_text.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.result_text.config(yscrollcommand=self.scrollbar.set)
+
+        self.delete_button = tk.Button(self, text="Delete Selected", command=self.delete_selected_duplicates)
+        self.delete_button.pack(pady=5)
+
+        self.duplicate_pairs = []
+        self.checkboxes = []
 
     def select_directory(self):
         selected_directory = filedialog.askdirectory()
@@ -65,12 +85,31 @@ class DuplicateFilesGUI(tk.Toplevel):
             messagebox.showerror("Error", "Invalid directory path.")
             return
 
-        duplicate_files = find_duplicate_files(directory)
-        if not duplicate_files:
+        self.result_text.delete(1.0, tk.END)
+        self.duplicate_pairs = find_duplicate_files(directory)
+
+        if not self.duplicate_pairs:
             self.result_text.insert(tk.END, "No duplicate files found.")
         else:
-            self.result_text.insert(tk.END, "Duplicate files:\n")
-            for file1, file2 in duplicate_files:
-                self.result_text.insert(tk.END, f"{file1} -- {file2}\n")
+            self.checkboxes = []
+            for i, (file1, file2) in enumerate(self.duplicate_pairs, start=1):
+                var = tk.IntVar()
+                checkbox = tk.Checkbutton(self.result_text, text=f"{file1} -- {file2}", variable=var, onvalue=1, offvalue=0)
+                checkbox.pack(anchor=tk.W)
+                self.checkboxes.append((var, file1, file2))
+
+    def delete_selected_duplicates(self):
+        selected_indices = [i for i, (var, _, _) in enumerate(self.checkboxes) if var.get() == 1]
+
+        if selected_indices:
+            for index in selected_indices:
+                file_to_delete = self.duplicate_pairs[index][0]
+                if delete_file(file_to_delete):
+                    self.result_text.insert(tk.END, f"Deleted: {file_to_delete}\n")
+                else:
+                    self.result_text.insert(tk.END, f"Error: Unable to delete {file_to_delete}\n")
+
+            self.find_duplicates()  # Refresh the duplicate list
 
 
+    

@@ -8,6 +8,13 @@ from typing import List, Tuple
 import send2trash
 from file_compression import compress_files 
 
+
+def _format_bytes(bytes_val):
+        for unit in ['', 'KB', 'MB']:
+            if bytes_val < 1024.0:
+                return f"{bytes_val:.2f}"
+            bytes_val /= 1024.0
+
 class FileVisualizerApp:
     def __init__(self, root):
         self.root = root

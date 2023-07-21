@@ -1,9 +1,45 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox, IntVar
 import os
-import shutil
+import hashlib
+import tkinter as tk
+from tkinter import IntVar, filedialog, messagebox
 import zipfile
+
 import send2trash
+
+def get_file_hash(file_path, block_size=65536):
+    hasher = hashlib.sha256()
+    with open(file_path, "rb") as file:
+        while True:
+            data = file.read(block_size)
+            if not data:
+                break
+            hasher.update(data)
+    return hasher.hexdigest()
+
+def find_duplicate_files(directory):
+    file_hashes = {}
+    duplicate_files = []
+
+    for dirpath, _, filenames in os.walk(directory):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            file_hash = get_file_hash(file_path)
+            if file_hash in file_hashes:
+                duplicate_files.append((os.path.basename(file_hashes[file_hash]), os.path.basename(file_path)))
+            else:
+                file_hashes[file_hash] = file_path
+
+    return duplicate_files
+
+def delete_file(file_path):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False
 
 class FileVisualizerApp:
     def __init__(self, root):
@@ -11,46 +47,47 @@ class FileVisualizerApp:
         self.root.title("File System Visualizer")
         self.root.geometry("400x400")
 
-        self.threshold_label = tk.Label(root, text="Enter the threshold for large files (in MB):")
-        self.threshold_label.pack(pady=5)
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.threshold_entry = tk.Entry(root)
-        self.threshold_entry.pack(pady=5)
+        self.threshold_label = tk.Label(self.main_frame, text="Enter the threshold for large files (in MB):")
+        self.threshold_label.grid(row=0, column=0, padx=5, pady=5)
 
-        self.label = tk.Label(root, text="Select Directory:")
-        self.label.pack(pady=5)
+        self.threshold_entry = tk.Entry(self.main_frame)
+        self.threshold_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        self.browse_button = tk.Button(root, text="Browse", command=self.ask_directory)
-        self.browse_button.pack(pady=5)
+        self.label = tk.Label(self.main_frame, text="Select Directory:")
+        self.label.grid(row=1, column=0, padx=5, pady=5)
 
-        self.file_info_label = tk.Label(root, text="", wraplength=350)
-        self.file_info_label.pack(pady=5)
+        self.browse_button = tk.Button(self.main_frame, text="Browse", command=self.ask_directory)
+        self.browse_button.grid(row=1, column=1, padx=5, pady=5)
 
-        self.status_label = tk.Label(root, text="")
-        self.status_label.pack(pady=5)
+        self.file_info_label = tk.Label(self.main_frame, text="", wraplength=350)
+        self.file_info_label.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
 
-        self.scroll_canvas = tk.Canvas(root, width=400, height=200)
-        self.scroll_canvas.pack()
+        self.status_label = tk.Label(self.main_frame, text="")
+        self.status_label.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.scroll_canvas = tk.Canvas(self.main_frame, width=400, height=200)
+        self.scroll_canvas.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
         self.scroll_frame = tk.Frame(self.scroll_canvas)
-        self.scroll_frame.pack()
+        self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
 
-        self.scroll_y = tk.Scrollbar(root, orient="vertical", command=self.scroll_canvas.yview)
-        self.scroll_y.pack(side="right", fill="y")
+        self.scroll_y = tk.Scrollbar(self.main_frame, orient="vertical", command=self.scroll_canvas.yview)
+        self.scroll_y.grid(row=4, column=2, sticky="ns", padx=5, pady=5)
 
         self.scroll_canvas.configure(yscrollcommand=self.scroll_y.set)
         self.scroll_canvas.bind("<Configure>", lambda e: self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all")))
 
-        self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
+        self.select_all_button = tk.Button(self.main_frame, text="Select All", command=self.select_all_files)
+        self.select_all_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
-        self.select_all_button = tk.Button(root, text="Select All", command=self.select_all_files)
-        self.select_all_button.pack(pady=5)
+        self.delete_button = tk.Button(self.main_frame, text="Delete Selected", command=self.delete_selected_and_show_status)
+        self.delete_button.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
 
-        self.delete_button = tk.Button(root, text="Delete Selected", command=self.delete_selected_and_show_status)
-        self.delete_button.pack(pady=5)
-
-        self.compress_button = tk.Button(root, text="Compress Selected", command=self.compress_selected_files)
-        self.compress_button.pack(pady=5)
+        self.compress_button = tk.Button(self.main_frame, text="Compress Selected", command=self.compress_selected_files)
+        self.compress_button.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
 
         self.selected_files_var = []
 
@@ -60,6 +97,7 @@ class FileVisualizerApp:
             self.file_info_label.config(text=f"Selected directory: {directory_path}")
             self.directory_path = directory_path
             self.select_directory_and_show_large_files()
+
 
     def get_files_sorted_by_size_and_extension(self, directory: str, threshold_mb: int = 100) -> list:
         files_and_sizes = []
@@ -177,7 +215,7 @@ class FileVisualizerApp:
             n += 1
         return f"{size:.2f} {power_labels[n]}B"
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = FileVisualizerApp(root)
-    root.mainloop()
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     app = FileVisualizerApp(root)
+#     root.mainloop()

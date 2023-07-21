@@ -1,0 +1,5 @@
+pygame
+tkinter
+send2trash
+zipfile
+shutil

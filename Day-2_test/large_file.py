@@ -1,9 +1,12 @@
+from typing import List
 import os
-import math
 import tkinter as tk
 from tkinter import filedialog, messagebox, IntVar
-from typing import List, Tuple
 import shutil
+import zipfile
+from typing import List, Tuple
+import send2trash
+from file_compression import compress_files 
 
 class FileVisualizerApp:
     def __init__(self, root):
@@ -22,6 +25,22 @@ class FileVisualizerApp:
 
         self.status_label = tk.Label(root, text="")
         self.status_label.pack(pady=5)
+        
+    def delete_selected_files(self, selected_files: List[str], directory: str, permanent_delete: bool) -> int:
+        total_cleared_space = 0
+        for filename in selected_files:
+            file_path = os.path.join(directory, filename)
+            try:
+                file_size = os.path.getsize(file_path)
+                if permanent_delete:
+                    os.remove(file_path)
+                else:
+                    send2trash.send2trash(file_path)  # Move to Recycle Bin or Trash
+                total_cleared_space += file_size
+            except Exception as e:
+                messagebox.showerror("Error", f"Error deleting file {filename}: {e}")
+        return total_cleared_space
+
 
     def get_files_sorted_by_size_and_extension(self, directory: str, threshold_mb: int = 100) -> List[Tuple[str, int]]:
         files_and_sizes = []
@@ -81,8 +100,14 @@ class FileVisualizerApp:
                     self.selected_files_checkboxes.append((file, checkbox))
                     checkbox.pack(anchor="w")
 
-                delete_button = tk.Button(self.root, text="Delete Selected", command=self.delete_selected_and_show_status)
-                delete_button.pack(pady=5)
+                options_frame = tk.Frame(self.root)
+                options_frame.pack(pady=10)
+
+                delete_button = tk.Button(options_frame, text="Delete Selected", command=self.delete_selected_and_show_status)
+                delete_button.pack(side=tk.LEFT, padx=5)
+
+                compress_button = tk.Button(options_frame, text="Compress Selected", command=self.compress_selected_files)
+                compress_button.pack(side=tk.LEFT, padx=5)
             else:
                 self.status_label.config(text="No large files (>= 100 MB) found in the directory.")
 
@@ -95,6 +120,27 @@ class FileVisualizerApp:
             self.select_directory_and_show_large_files()  # Refresh the file list after deletion
         else:
             messagebox.showinfo("No Files Selected", "Please select files to delete.")
+
+    def compress_selected_files(self):
+        selected_files = [file for (file, _), var in zip(self.selected_files_checkboxes, self.selected_files_var) if var.get() == 1]
+        if selected_files:
+            output_zip = filedialog.asksaveasfilename(defaultextension=".zip")
+            if output_zip:
+                self.compress_files(output_zip, selected_files)
+                messagebox.showinfo("Compression Complete", f"Selected files have been compressed and saved to {output_zip}.")
+        else:
+            messagebox.showinfo("No Files Selected", "Please select files to compress.")
+
+    def compress_files(self, output_zip: str, files: List[str]):
+        with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file in files:
+                if os.path.isfile(file):
+                    zipf.write(file, os.path.basename(file))
+                elif os.path.isdir(file):
+                    for root, _, filenames in os.walk(file):
+                        for filename in filenames:
+                            filepath = os.path.join(root, filename)
+                            zipf.write(filepath, os.path.relpath(filepath, file))
 
     @staticmethod
     def format_bytes(size: int) -> str:
@@ -110,3 +156,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = FileVisualizerApp(root)
     root.mainloop()
+

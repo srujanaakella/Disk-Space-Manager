@@ -1,7 +1,7 @@
 import os
 import hashlib
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox
 
 def get_file_hash(file_path, block_size=65536):
     hasher = hashlib.sha256()
@@ -22,7 +22,8 @@ def find_duplicate_files(directory):
             file_path = os.path.join(dirpath, filename)
             file_hash = get_file_hash(file_path)
             if file_hash in file_hashes:
-                duplicate_files.append((os.path.basename(file_hashes[file_hash]), os.path.basename(file_path)))
+                duplicate_files.append((os.path.basename(file_hashes[file_hash]), file_hashes[file_hash]))
+                duplicate_files.append((os.path.basename(file_path), file_path))
             else:
                 file_hashes[file_hash] = file_path
 
@@ -30,8 +31,11 @@ def find_duplicate_files(directory):
 
 def delete_file(file_path):
     try:
-        os.remove(file_path)
-        return True
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return True
+        else:
+            return False
     except Exception as e:
         return False
 
@@ -102,14 +106,22 @@ class DuplicateFilesGUI(tk.Toplevel):
         selected_indices = [i for i, (var, _, _) in enumerate(self.checkboxes) if var.get() == 1]
 
         if selected_indices:
-            for index in selected_indices:
-                file_to_delete = self.duplicate_pairs[index][0]
-                if delete_file(file_to_delete):
-                    self.result_text.insert(tk.END, f"Deleted: {file_to_delete}\n")
-                else:
-                    self.result_text.insert(tk.END, f"Error: Unable to delete {file_to_delete}\n")
+            confirm = messagebox.askyesno("Confirmation", "Are you sure you want to delete the selected duplicates?")
+            if confirm:
+                for index in selected_indices:
+                    file_to_delete = self.duplicate_pairs[index][0]
+                    full_path_to_delete = self.duplicate_pairs[index][1]
+                    if delete_file(full_path_to_delete):
+                        self.result_text.insert(tk.END, f"Deleted: {file_to_delete}\n")
+                    else:
+                        self.result_text.insert(tk.END, f"Error: Unable to delete {file_to_delete}\n")
 
-            self.find_duplicates()  # Refresh the duplicate list
+                self.find_duplicates()  # Refresh the duplicate list
 
+                # Remove checkboxes from the result text
+                for checkbox in self.result_text.winfo_children():
+                    checkbox.pack_forget()
 
-    
+# if __name__ == "__main__":
+#     duplicate_files_gui = DuplicateFilesGUI()
+#     duplicate_files_gui.mainloop()

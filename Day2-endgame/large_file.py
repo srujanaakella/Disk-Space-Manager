@@ -17,11 +17,11 @@ class FileVisualizerApp:
         self.threshold_entry = tk.Entry(root)
         self.threshold_entry.pack(pady=5)
 
-        self.browse_button = tk.Button(root, text="Browse", command=self.ask_directory)
-        self.browse_button.pack(pady=5)
-
         self.label = tk.Label(root, text="Select Directory:")
         self.label.pack(pady=5)
+
+        self.browse_button = tk.Button(root, text="Browse", command=self.ask_directory)
+        self.browse_button.pack(pady=5)
 
         self.file_info_label = tk.Label(root, text="", wraplength=350)
         self.file_info_label.pack(pady=5)
@@ -177,7 +177,7 @@ class FileVisualizerApp:
             n += 1
         return f"{size:.2f} {power_labels[n]}B"
 
-# if __name__ == "__main__":
-#     root = tk.Tk()
-#     app = FileVisualizerApp(root)
-#     root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = FileVisualizerApp(root)
+    root.mainloop()

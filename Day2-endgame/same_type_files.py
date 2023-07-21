@@ -1,9 +1,8 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
-import zipfile
-import shutil
-import send2trash
+
+from file_compression import compress_files
 
 class FileSelectorGUI(tk.Toplevel):
     FILE_EXTENSIONS = {
@@ -28,7 +27,7 @@ class FileSelectorGUI(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("File Selector")
-        self.geometry("500x600")
+        self.geometry("500x400")
 
         self.directory_frame = tk.Frame(self)
         self.directory_frame.pack(pady=10)
@@ -53,17 +52,23 @@ class FileSelectorGUI(tk.Toplevel):
         self.enter_button = tk.Button(self, text="Enter", command=self.display_files)
         self.enter_button.pack(pady=10)
 
-        self.file_list = tk.Listbox(self, width=50, height=15, selectmode=tk.MULTIPLE)
+        self.file_list = tk.Listbox(self, width=50, height=15, selectmode=tk.EXTENDED)
         self.file_list.pack(pady=10)
 
         self.total_space_label = tk.Label(self, text="Total Space: ")
         self.total_space_label.pack()
 
-        self.delete_button = tk.Button(self, text="Delete Selected", command=self.delete_selected_files)
-        self.delete_button.pack(pady=5)
+        # Add select all button
+        self.select_all_button = tk.Button(self, text="Select All", command=self.select_all)
+        self.select_all_button.pack()
 
-        self.compress_button = tk.Button(self, text="Compress All", command=self.compress_all_files)
-        self.compress_button.pack(pady=5)
+        # Add delete selected button
+        self.delete_selected_button = tk.Button(self, text="Delete Selected", command=self.delete_selected)
+        self.delete_selected_button.pack()
+
+        # Add compress selected button
+        self.compress_selected_button = tk.Button(self, text="Compress Selected", command=self.compress_selected)
+        self.compress_selected_button.pack()
 
     def select_directory(self):
         directory_path = filedialog.askdirectory()
@@ -103,62 +108,58 @@ class FileSelectorGUI(tk.Toplevel):
                 return f"{bytes_val:.2f} {unit}"
             bytes_val /= 1024.0
 
-    def delete_selected_files(self):
-        selected_files = self.file_list.curselection()
-        if not selected_files:
-            messagebox.showinfo("No Files Selected", "Please select files to delete.")
+    def select_all(self):
+        self.file_list.select_set(0, tk.END)
+
+    def delete_selected(self):
+        selected_indices = self.file_list.curselection()
+        if not selected_indices:
+            messagebox.showwarning("No Selection", "No files selected for deletion.")
             return
 
-        confirm = messagebox.askyesno("Delete Files", "Are you sure you want to delete the selected files?")
-        if not confirm:
-            return
-
-        total_cleared_space = 0
-        for index in selected_files:
-            filename = self.file_list.get(index)
-            filepath = os.path.join(self.directory_var.get(), filename)
-            try:
-                file_size = os.path.getsize(filepath)
-                if messagebox.askyesno("Permanent Delete", f"Do you want to permanently delete {filename}?"):
+        confirm_delete = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {len(selected_indices)} files?")
+        if confirm_delete:
+            directory_path = self.directory_var.get()
+            for index in reversed(selected_indices):
+                filename = self.file_list.get(index)
+                filepath = os.path.join(directory_path, filename)
+                try:
                     os.remove(filepath)
-                else:
-                    send2trash.send2trash(filepath)  # Move to recycle bin
-                total_cleared_space += file_size
-            except Exception as e:
-                messagebox.showerror("Error", f"Error deleting file {filename}: {e}")
+                    self.file_list.delete(index)
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to delete {filename}: {e}")
 
-        self.total_cleared_space += total_cleared_space
-        self.total_space_label.config(text=f"Total Space: {self.format_bytes(total_cleared_space)} (Total Cleared: {self.format_bytes(self.total_cleared_space)})")
-        self.display_files()  # Refresh the file list
+    def compress_selected(self):
+        selected_indices = self.file_list.curselection()
+        if not selected_indices:
+            messagebox.showwarning("No Selection", "No files selected for compression.")
+            return
 
-    def compress_all_files(self):
+        files_to_compress = []
         directory_path = self.directory_var.get()
-        if not os.path.exists(directory_path):
-            messagebox.showerror("Error", "Invalid directory path.")
+        extensions = self.FILE_EXTENSIONS[self.file_type_var.get()]
+
+        for index in selected_indices:
+            filename = self.file_list.get(index)
+            filepath = os.path.join(directory_path, filename)
+            if os.path.isfile(filepath) and os.path.splitext(filename)[1].lower() in extensions:
+                files_to_compress.append(filepath)
+
+        if not files_to_compress:
+            messagebox.showwarning("Invalid Selection", "No valid files selected for compression.")
             return
 
-        compress_filename = filedialog.asksaveasfilename(defaultextension=".zip", filetypes=[("Zip Files", "*.zip")])
-        if not compress_filename:
-            return
-
-        large_files = [filename for filename in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, filename))]
-        if not large_files:
-            messagebox.showinfo("No Files", "There are no files to compress.")
-            return
-
-        try:
-            with zipfile.ZipFile(compress_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for filename in large_files:
-                    filepath = os.path.join(directory_path, filename)
-                    zipf.write(filepath, filename)
-        except Exception as e:
-            messagebox.showerror("Error", f"Error compressing files: {e}")
-            return
-
-        messagebox.showinfo("Compression Complete", f"All files have been compressed into '{compress_filename}'.")
+        output_zip = filedialog.asksaveasfilename(defaultextension='.zip', filetypes=[("ZIP files", "*.zip")])
+        if output_zip:
+            compress_files(output_zip, files_to_compress)
+            messagebox.showinfo("Success", "Files compressed successfully.")
+        else:
+            messagebox.showwarning("Warning", "Compression canceled.")
 
 if __name__ == "__main__":
-    file_selector_gui = FileSelectorGUI()
-    file_selector_gui.mainloop()
+    root = tk.Tk()
+    root.title("File System Manager")
 
-    
+    # Set the main window size
+    root.geometry(f"{500}x500")
+   

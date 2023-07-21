@@ -3,3 +3,4 @@ tkinter
 send2trash
 zipfile
 shutil
+customtkinter

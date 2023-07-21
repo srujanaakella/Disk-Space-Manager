@@ -40,7 +40,7 @@ def delete_file(file_path):
     except Exception as e:
         return False
 
-class DuplicateFilesGUI(tk.Tk):
+class DuplicateFilesGUI(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("Duplicate Files Finder")
@@ -148,6 +148,6 @@ class DuplicateFilesGUI(tk.Tk):
                 for checkbox in self.scrollable_frame.winfo_children():
                     checkbox.destroy()
 
-if __name__ == "__main__":
-    duplicate_files_gui = DuplicateFilesGUI()
-    duplicate_files_gui.mainloop()
+#if __name__ == "__main__":
+    #duplicate_files_gui = DuplicateFilesGUI()
+    #duplicate_files_gui.mainloop()

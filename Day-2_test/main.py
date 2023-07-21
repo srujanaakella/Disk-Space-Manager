@@ -40,7 +40,8 @@ def same_file():
 
 def disk_space():
     disk_space_visualisation = DiskSpaceVisualizer()
-    disk_space_visualisation.mainloop()
+    disk_space_visualisation.display()
+    
 
 def open_file_visualizer_app():
     root = tk.Toplevel()

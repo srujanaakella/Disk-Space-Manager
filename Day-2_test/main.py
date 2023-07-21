@@ -14,7 +14,8 @@ import pygame
 import os
 import math
 import sys
-
+from temp_file_manager import TempFileManager
+from tkinter import filedialog, messagebox
 
 def open_directory():
     directory = filedialog.askdirectory()
@@ -54,10 +55,17 @@ def compress():
         output_zip = filedialog.asksaveasfilename(defaultextension='.zip', filetypes=[("ZIP files", "*.zip")])
         compress_files(output_zip, files)
 
+def remove_temp_files():
+    temp_manager = TempFileManager()
+    total_cleared_space, num_files_deleted = temp_manager.remove_temp_files()
+    temp_manager.show_success_message(total_cleared_space, num_files_deleted)
+
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("File System Manager")
-    root.geometry("500x450")
+
+    # Set the main window size
+    root.geometry(f"{500}x{500}")
     root.configure(bg="lightblue")
 
     header_label = tk.Label(root, text="Disk Space Manager", font=("Montserrat", 25, "bold"), bg="lightblue")
@@ -87,5 +95,8 @@ if __name__ == "__main__":
 
     compress_button = ctk.CTkButton(root, text="Compress Files", command=compress, font=("Montserrat", 13))
     compress_button.pack(pady=10)
+
+    temp_button = ctk.CTkButton(root, text="Remove Temp Files", command=remove_temp_files, font=("Montserrat", 13))
+    temp_button.pack(pady=10)
 
     root.mainloop()

@@ -5,30 +5,29 @@ import shutil
 import zipfile
 import send2trash
 
-
 class FileVisualizerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("File System Visualizer")
         self.root.geometry("400x400")
 
-        self.label = tk.Label(root, text="Select Directory:")
-        self.label.pack(pady=5)
+        self.threshold_label = tk.Label(root, text="Enter the threshold for large files (in MB):")
+        self.threshold_label.pack(pady=5)
+
+        self.threshold_entry = tk.Entry(root)
+        self.threshold_entry.pack(pady=5)
 
         self.browse_button = tk.Button(root, text="Browse", command=self.ask_directory)
         self.browse_button.pack(pady=5)
+
+        self.label = tk.Label(root, text="Select Directory:")
+        self.label.pack(pady=5)
 
         self.file_info_label = tk.Label(root, text="", wraplength=350)
         self.file_info_label.pack(pady=5)
 
         self.status_label = tk.Label(root, text="")
         self.status_label.pack(pady=5)
-
-        self.threshold_label = tk.Label(root, text="Enter the threshold for large files (in MB):")
-        self.threshold_label.pack(pady=5)
-
-        self.threshold_entry = tk.Entry(root)
-        self.threshold_entry.pack(pady=5)
 
         self.scroll_canvas = tk.Canvas(root, width=400, height=200)
         self.scroll_canvas.pack()
@@ -177,7 +176,6 @@ class FileVisualizerApp:
             size /= power
             n += 1
         return f"{size:.2f} {power_labels[n]}B"
-
 
 # if __name__ == "__main__":
 #     root = tk.Tk()

@@ -94,7 +94,7 @@ class FileVisualizerApp:
 
             large_files = self.get_files_sorted_by_size_and_extension(directory_path, threshold_mb=100)
             if large_files:
-                status = "\n".join(f"{file}: {size} bytes" for file, size in large_files)
+                status = "\n".join(f"{file}: {_format_bytes(size)} MB" for file, size in large_files)
                 self.status_label.config(text=status)
 
                 # Add Checkbox for file selection
@@ -159,8 +159,7 @@ class FileVisualizerApp:
             n += 1
         return f"{size:.2f} {power_labels[n]}B"
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = FileVisualizerApp(root)
-    root.mainloop()
-
+#if __name__ == "__main__":
+    #root = tk.Tk()
+    #app = FileVisualizerApp(root)
+    #root.mainloop()

@@ -4,7 +4,7 @@ from file_compression import compress_files
 from same_type_files import FileSelectorGUI
 from disk_space import DiskSpaceVisualizer
 from duplicate import DuplicateFilesGUI
-from free_space import DiskSpaceGUI
+#from free_space import DiskSpaceGUI
 from delete import FileDeletionGUI
 from visualisation_piechart import DiskSpaceVisualizerGUI
 from tkinter import filedialog
@@ -18,6 +18,7 @@ import sys
 from temp_file_manager import TempFileManager
 from tkinter import filedialog, messagebox
 from tkinter import *
+from custom_msg import CustomMessageBox,show_custom_message_box
 
 
 
@@ -29,7 +30,7 @@ def open_directory():
         visualize(file_tree)
 
 def check_free():
-    disk_space_gui = DiskSpaceGUI()
+    disk_space_gui = DiskSpaceVisualizer()
     disk_space_gui.mainloop()
 
 def check_dup():
@@ -50,8 +51,21 @@ def disk_space():
     
 
 def open_file_visualizer_app():
-    root = tk.Toplevel()
-    app = FileVisualizerApp(root)
+    result = show_custom_message_box(
+        title="Message Box",
+        message="Please choose the visualisation:",
+        button1_text="SSD Representaion",
+        button2_text="Pie Chart"
+    )
+
+    if result is not None:
+        if result:
+            open_directory()
+        else:
+            root = tk.Toplevel()
+            app = DiskSpaceVisualizerGUI(root)
+    
+        
 
 def compress():
     directory = filedialog.askdirectory()
@@ -89,7 +103,7 @@ if __name__ == "__main__":
     free_button = ctk.CTkButton(root,text="Display Disk Space", command=disk_space, font= ("Montserrat", 13))
     free_button.pack(padx=10,pady=10)
 
-    visualize_button = ctk.CTkButton(root, text="Visualize Files", command=display_disk_utilization, font= ("Montserrat", 13))
+    visualize_button = ctk.CTkButton(root, text="Visualize Files", command=open_file_visualizer_app, font= ("Montserrat", 13))
     visualize_button.pack(padx=10,pady=10)
 
     duplicate_button=ctk.CTkButton(root,text="Find Duplicate Files",command=check_dup, font= ("Montserrat", 13))

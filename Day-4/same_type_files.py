@@ -95,13 +95,21 @@ class FileSelectorGUI(tk.Toplevel):
 
         self.file_list.delete(0, tk.END)
         total_space = 0
-        for filename in os.listdir(directory_path):
-            filepath = os.path.join(directory_path, filename)
-            if os.path.isfile(filepath) and os.path.splitext(filename)[1].lower() in extensions:
-                self.file_list.insert(tk.END, filename)
-                total_space += os.path.getsize(filepath)
+
+        def scan_files_and_folders(directory):
+            nonlocal total_space
+            for filename in os.listdir(directory):
+                filepath = os.path.join(directory, filename)
+                if os.path.isfile(filepath) and os.path.splitext(filename)[1].lower() in extensions:
+                    self.file_list.insert(tk.END, filename)
+                    total_space += os.path.getsize(filepath)
+                elif os.path.isdir(filepath):
+                    scan_files_and_folders(filepath)
+
+        scan_files_and_folders(directory_path)
 
         self.total_space_label.config(text=f"Total Space: {self.format_bytes(total_space)}")
+
 
     def format_bytes(self, bytes_val):
         for unit in ['', 'KB', 'MB', 'GB', 'TB']:

@@ -1,36 +1,10 @@
-from tkinter import IntVar, filedialog, messagebox, ttk
-import customtkinter as ctk
-import tkinter as tk
-import send2trash
-import hashlib
-import zipfile
 import os
-
-
-def get_file_hash(file_path, block_size=65536):
-    hasher = hashlib.sha256()
-    with open(file_path, "rb") as file:
-        while True:
-            data = file.read(block_size)
-            if not data:
-                break
-            hasher.update(data)
-    return hasher.hexdigest()
-
-def find_duplicate_files(directory):
-    file_hashes = {}
-    duplicate_files = []
-
-    for dirpath, _, filenames in os.walk(directory):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            file_hash = get_file_hash(file_path)
-            if file_hash in file_hashes:
-                duplicate_files.append((os.path.basename(file_hashes[file_hash]), os.path.basename(file_path)))
-            else:
-                file_hashes[file_hash] = file_path
-
-    return duplicate_files
+import hashlib
+import send2trash
+import zipfile
+import tkinter as tk
+from tkinter import IntVar, filedialog, messagebox
+import customtkinter as ctk
 
 def delete_file(file_path):
     try:
@@ -48,31 +22,31 @@ class LargeFile:
         self.root.title("File System Visualizer")
         self.root.geometry("500x400")
 
-        self.main_frame = tk.Frame(self.root, bg= "lightblue")
+        self.main_frame = tk.Frame(self.root, bg="lightblue")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.threshold_label = tk.Label(self.main_frame, text="Enter the threshold for large files (in MB):", bg="lightblue", font = ("Montserrat", 13))
+        self.threshold_label = tk.Label(self.main_frame, text="Enter the threshold for large files (in MB):", bg="lightblue", font=("Montserrat", 13))
         self.threshold_label.grid(row=0, column=0, padx=5, pady=5)
 
         self.threshold_entry = tk.Entry(self.main_frame)
         self.threshold_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        self.label = tk.Label(self.main_frame, text="Select Directory:", bg="lightblue", font = ("Montserrat", 13))
+        self.label = tk.Label(self.main_frame, text="Select Directory:", bg="lightblue", font=("Montserrat", 13))
         self.label.grid(row=1, column=0, padx=5, pady=5)
 
         self.browse_button = ctk.CTkButton(self.main_frame, text="Browse", command=self.ask_directory)
         self.browse_button.grid(row=1, column=1, padx=5, pady=5)
 
-        self.file_info_label = tk.Label(self.main_frame, text="", wraplength=350, bg="lightblue", font = "Montserrat")
+        self.file_info_label = tk.Label(self.main_frame, text="", wraplength=350, bg="lightblue", font="Montserrat")
         self.file_info_label.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
 
-        self.status_label = tk.Label(self.main_frame, text="", bg="lightblue", font = "Montserrat")
+        self.status_label = tk.Label(self.main_frame, text="", bg="lightblue", font="Montserrat")
         self.status_label.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
 
         self.scroll_canvas = tk.Canvas(self.main_frame, width=400, height=200)
         self.scroll_canvas.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
-        self.scroll_frame = tk.Frame(self.scroll_canvas)
+        self.scroll_frame = tk.Frame(self.scroll_canvas, bg="lightblue")
         self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
 
         self.scroll_y = tk.Scrollbar(self.main_frame, orient="vertical", command=self.scroll_canvas.yview)
@@ -99,17 +73,17 @@ class LargeFile:
             self.directory_path = directory_path
             self.select_directory_and_show_large_files()
 
-
     def get_files_sorted_by_size_and_extension(self, directory: str, threshold_mb: int = 100) -> list:
         files_and_sizes = []
         threshold_bytes = threshold_mb * 1024 * 1024
 
-        for filename in os.listdir(directory):
-            file_path = os.path.join(directory, filename)
-            if os.path.isfile(file_path):
-                file_size = os.path.getsize(file_path)
-                if file_size >= threshold_bytes:
-                    files_and_sizes.append((filename, file_size))
+        for dirpath, _, filenames in os.walk(directory):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                if os.path.isfile(file_path):
+                    file_size = os.path.getsize(file_path)
+                    if file_size >= threshold_bytes:
+                        files_and_sizes.append((filename, file_size))
 
         files_and_sizes.sort(key=lambda x: (-x[1], os.path.splitext(x[0])[1]))
         return files_and_sizes
@@ -129,19 +103,11 @@ class LargeFile:
                 messagebox.showerror("Error", f"Error deleting file {filename}: {e}")
         return total_cleared_space
 
-    def move_to_recycle_bin(self, file_path: str):
-        try:
-            # On macOS, use shutil.move to move the file to the Trash
-            if os.name == 'posix':
-                shutil.move(file_path, os.path.join('~', '.Trash', os.path.basename(file_path)))
-        except Exception as e:
-            raise Exception(f"Error moving file {file_path} to the recycle bin: {e}")
-
     def select_directory_and_show_large_files(self):
         self.selected_files_var.clear()
         self.scroll_frame.destroy()
-        self.scroll_frame = tk.Frame(self.scroll_canvas)
-        self.scroll_frame.pack()
+        self.scroll_frame = tk.Frame(self.scroll_canvas, bg="lightblue")
+        self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
 
         threshold = self.get_threshold_from_entry()
         large_files = self.get_files_sorted_by_size_and_extension(self.directory_path, threshold_mb=threshold)
@@ -152,7 +118,7 @@ class LargeFile:
 
             for file, size in large_files:
                 var = IntVar()
-                checkbox = tk.Checkbutton(self.scroll_frame, text=file, variable=var)
+                checkbox = tk.Checkbutton(self.scroll_frame, text=file, variable=var, bg="lightblue")
                 checkbox.pack(anchor="w")
                 self.selected_files_var.append((file, size, var))
 
@@ -207,10 +173,16 @@ class LargeFile:
 
     @staticmethod
     def format_bytes(size: int) -> str:
-        power = 2**10
+        power = 2 ** 10
         n = 0
         power_labels = {0: '', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
         while size > power:
             size /= power
             n += 1
         return f"{size:.2f} {power_labels[n]}B"
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = LargeFile(root)
+    root.mainloop()

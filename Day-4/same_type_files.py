@@ -110,7 +110,6 @@ class FileSelectorGUI(tk.Toplevel):
 
         self.total_space_label.config(text=f"Total Space: {self.format_bytes(total_space)}")
 
-
     def format_bytes(self, bytes_val):
         for unit in ['', 'KB', 'MB', 'GB', 'TB']:
             if bytes_val < 1024.0:
@@ -129,14 +128,28 @@ class FileSelectorGUI(tk.Toplevel):
         confirm_delete = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {len(selected_indices)} files?")
         if confirm_delete:
             directory_path = self.directory_var.get()
-            for index in reversed(selected_indices):
+            successfully_deleted = []
+            not_deleted = []
+
+            for index in selected_indices[::-1]:
                 filename = self.file_list.get(index)
                 filepath = os.path.join(directory_path, filename)
                 try:
                     os.remove(filepath)
+                    successfully_deleted.append(filename)
                     self.file_list.delete(index)
                 except Exception as e:
-                    messagebox.showerror("Error", f"Failed to delete {filename}: {e}")
+                    not_deleted.append(filename)
+
+            if successfully_deleted:
+                success_message = f"{len(successfully_deleted)} files deleted successfully."
+                messagebox.showinfo("Deletion Successful", success_message)
+
+            if not_deleted:
+                not_deleted_message = f"{len(not_deleted)} files couldn't be deleted."
+                messagebox.showerror("Deletion Error", not_deleted_message)
+
+
 
     def compress_selected(self):
         selected_indices = self.file_list.curselection()

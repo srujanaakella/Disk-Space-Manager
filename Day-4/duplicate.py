@@ -1,11 +1,9 @@
-from concurrent.futures import ThreadPoolExecutor
-from tkinter import ttk, filedialog, messagebox
-import customtkinter as ctk
-import tkinter as tk
-import hashlib
 import os
-from PIL import Image
-import imagehash
+import hashlib
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from concurrent.futures import ThreadPoolExecutor
+import customtkinter as ctk
 
 def get_file_hash(file_path, block_size=65536):
     hasher = hashlib.sha256()
@@ -16,13 +14,6 @@ def get_file_hash(file_path, block_size=65536):
                 break
             hasher.update(data)
     return hasher.hexdigest()
-
-def calculate_image_hash(file_path):
-    try:
-        with Image.open(file_path) as img:
-            return str(imagehash.average_hash(img))
-    except Exception:
-        return None
 
 def find_duplicate_files(directory):
     file_hashes = {}
@@ -39,54 +30,18 @@ def find_duplicate_files(directory):
 
     return duplicate_files
 
-def find_duplicate_images(directory):
-    image_hashes = {}
-    duplicate_images = []
-
-    for dirpath, _, filenames in os.walk(directory):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            image_hash = calculate_image_hash(file_path)
-            if image_hash in image_hashes:
-                duplicate_images.append((os.path.basename(image_hashes[image_hash]), os.path.basename(file_path)))
-            else:
-                image_hashes[image_hash] = file_path
-
-    return duplicate_images
-
-def find_all_duplicates(directory):
-    file_hashes = {}
-    image_hashes = {}
-    duplicate_files = []
-    duplicate_images = []
-
-    for dirpath, _, filenames in os.walk(directory):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            file_hash = get_file_hash(file_path)
-            image_hash = calculate_image_hash(file_path)
-
-            if file_hash in file_hashes:
-                duplicate_files.append((os.path.basename(file_hashes[file_hash]), os.path.basename(file_path)))
-            else:
-                file_hashes[file_hash] = file_path
-
-            if image_hash in image_hashes:
-                duplicate_images.append((os.path.basename(image_hashes[image_hash]), os.path.basename(file_path)))
-            else:
-                image_hashes[image_hash] = file_path
-
-    return duplicate_files, duplicate_images
-
 def delete_file(file_path):
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
             return True
         else:
+            print(f"File not found: {file_path}")
             return False
     except Exception as e:
+        print(f"Error deleting file: {file_path} - {e}")
         return False
+
 
 class DuplicateFilesGUI(tk.Toplevel):
     def __init__(self):
@@ -95,7 +50,7 @@ class DuplicateFilesGUI(tk.Toplevel):
         self.geometry("800x600")
         self.configure(bg="lightblue")
 
-        self.label = tk.Label(self, text="Select a directory to find duplicate files: ", bg="lightblue", font="Montserrat")
+        self.label = tk.Label(self, text="Select a directory to find duplicate files:", bg="lightblue", font = "Montserrat")
         self.label.pack(pady=10)
 
         self.directory_var = tk.StringVar()
@@ -105,7 +60,7 @@ class DuplicateFilesGUI(tk.Toplevel):
         self.browse_button = ctk.CTkButton(self, text="Browse", command=self.select_directory)
         self.browse_button.pack(pady=5)
 
-        self.find_button = ctk.CTkButton(self, text="Find Duplicate Files ", command=self.find_duplicates)
+        self.find_button = ctk.CTkButton(self, text="Find Duplicate Files", command=self.find_duplicates)
         self.find_button.pack(pady=10)
 
         self.result_frame = tk.Frame(self)
@@ -119,15 +74,14 @@ class DuplicateFilesGUI(tk.Toplevel):
         self.result_text.config(yscrollcommand=self.scrollbar.set)
 
         self.select_all_var = tk.IntVar()
-        self.select_all_checkbutton = ctk.CTkCheckBox(self, text="Select All", command=self.toggle_select_all,
-                                                      variable=self.select_all_var, font=("Montserrat", 13), text_color="black")
+        self.select_all_checkbutton = ctk.CTkCheckBox(self, text="Select All", command=self.toggle_select_all, 
+                                                      variable=self.select_all_var, font= ("Montserrat", 13), text_color= "black")
         self.select_all_checkbutton.pack(pady=5)
 
         self.delete_button = ctk.CTkButton(self, text="Delete Selected", command=self.delete_selected_duplicates)
         self.delete_button.pack(pady=5)
 
         self.duplicate_pairs = []
-        self.duplicate_images = []
         self.checkboxes = []
         self.scrollable_frame = None
 
@@ -152,26 +106,19 @@ class DuplicateFilesGUI(tk.Toplevel):
             return
 
         self.result_text.delete(1.0, tk.END)
-        self.duplicate_pairs, self.duplicate_images = find_all_duplicates(directory)
+        self.duplicate_pairs = find_duplicate_files(directory)
 
-        if not self.duplicate_pairs and not self.duplicate_images:
-            self.result_text.insert(tk.END, "No duplicate files or images found.")
+        if not self.duplicate_pairs:
+            self.result_text.insert(tk.END, "No duplicate files found.")
         else:
             self.create_scrollable_frame()
             self.checkboxes = []
             for i, (file1, file2) in enumerate(self.duplicate_pairs, start=1):
                 var = tk.IntVar()
-                checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=f"Duplicate Files: {file1} -- {file2}", variable=var, onvalue=1, offvalue=0,
-                                           font=("Montserrat", 13), text_color="black", bg_color="white")
+                checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=f"{file1} -- {file2}", variable=var, onvalue=1, offvalue=0,
+                                           font= ("Montserrat", 13), text_color= "black", bg_color="white")
                 checkbox.pack(anchor=tk.W)
                 self.checkboxes.append((var, file1, file2))
-
-            for i, (img1, img2) in enumerate(self.duplicate_images, start=len(self.duplicate_pairs) + 1):
-                var = tk.IntVar()
-                checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=f"Duplicate Images: {img1} -- {img2}", variable=var, onvalue=1, offvalue=0,
-                                           font=("Montserrat", 13), text_color="black", bg_color="white")
-                checkbox.pack(anchor=tk.W)
-                self.checkboxes.append((var, img1, img2))
 
     def create_scrollable_frame(self):
         if self.scrollable_frame:
@@ -181,13 +128,6 @@ class DuplicateFilesGUI(tk.Toplevel):
         self.scrollable_frame.pack(fill=tk.BOTH, expand=True)
         self.result_text.window_create(tk.END, window=self.scrollable_frame)
 
-    def get_file_size(file_path):
-        try:
-            return os.path.getsize(file_path)
-        except Exception:
-            return 0
-
-
     def delete_selected_duplicates(self):
         selected_indices = [i for i, (var, _, _) in enumerate(self.checkboxes) if var.get() == 1]
 
@@ -195,41 +135,34 @@ class DuplicateFilesGUI(tk.Toplevel):
             confirm = messagebox.askyesno("Confirmation", "Are you sure you want to delete the selected duplicates?")
             if confirm:
                 directory = self.directory_var.get()
+                duplicates_to_delete = [self.duplicate_pairs[index][0] for index in selected_indices]
 
-                # Create a separate list for duplicates to delete
-                duplicates_to_delete = []
+                deleted_indices = []
+                not_deleted_indices = []
 
-                for index in selected_indices:
-                    if index < len(self.duplicate_pairs):
-                        duplicates_to_delete.append(self.duplicate_pairs[index][0])
-                    elif index < len(self.duplicate_pairs) + len(self.duplicate_images):
-                        duplicates_to_delete.append(self.duplicate_images[index - len(self.duplicate_pairs)][0])
+                with ThreadPoolExecutor() as executor:
+                    results = list(executor.map(delete_file, [os.path.join(directory, file_to_delete) for file_to_delete in duplicates_to_delete]))
 
-                deleted_files = []
-                freed_space = 0
-
-                for file_to_delete in duplicates_to_delete:
-                    result = delete_file(os.path.join(directory, file_to_delete))
+                for i, result in enumerate(results):
                     if result:
-                        deleted_files.append(file_to_delete)
-                        if os.path.exists(os.path.join(directory, file_to_delete)):
-                            freed_space += get_file_size(os.path.join(directory, file_to_delete))
+                        deleted_indices.append(selected_indices[i])
+                    else:
+                        not_deleted_indices.append(selected_indices[i])
 
-                # Convert freed_space from bytes to MB
-                freed_space_MB = freed_space / (1024 * 1024)
+                for index in reversed(deleted_indices):
+                    del self.duplicate_pairs[index]
 
-                if deleted_files:
-                    messagebox.showinfo("Files Deleted", f"The following files have been deleted:\n\n{', '.join(deleted_files)}")
-                else:
-                    messagebox.showinfo("No Files Deleted", "No files were deleted.")
+                for index in reversed(not_deleted_indices):
+                    self.result_text.insert(tk.END, f"Error: Unable to delete {self.duplicate_pairs[index][0]}\n")
 
-                # Update the GUI list after deletion
                 for checkbox in self.scrollable_frame.winfo_children():
                     checkbox.destroy()
 
-                self.duplicate_pairs = [pair for i, pair in enumerate(self.duplicate_pairs) if i not in selected_indices]
-                self.duplicate_images = [pair for i, pair in enumerate(self.duplicate_images) if i not in selected_indices]
-if __name__ == "__main__":
-    app = DuplicateFilesGUI()
-    app.mainloop()
+                deleted_count = len(deleted_indices)
+                if deleted_count > 0:
+                    messagebox.showinfo("Deletion Successful", f"{deleted_count} files deleted successfully.")
 
+
+if __name__ == "__main__":
+    duplicate_files_gui = DuplicateFilesGUI()
+    duplicate_files_gui.mainloop()

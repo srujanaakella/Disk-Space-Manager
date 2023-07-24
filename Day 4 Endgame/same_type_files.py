@@ -1,8 +1,9 @@
-from tkinter import filedialog, ttk, messagebox
-from file_compression import compress_files
-import customtkinter as ctk
-import tkinter as tk
 import os
+import tkinter as tk
+import customtkinter as ctk
+from tkinter import filedialog, ttk, messagebox
+
+from file_compression import compress_files
 
 class FileSelectorGUI(tk.Toplevel):
     FILE_EXTENSIONS = {
@@ -59,10 +60,6 @@ class FileSelectorGUI(tk.Toplevel):
         self.total_space_label = tk.Label(self, text="Total Space: ", font= ("Montserrat", 13), bg= "lightblue")
         self.total_space_label.pack(pady=10)
 
-        self.file_frame = tk.Frame(self)
-        self.file_frame.pack(pady=10)
-
-
         # Add select all button
         self.select_all_button = ctk.CTkButton(self, text="Select All", command=self.select_all)
         self.select_all_button.pack(pady=8)
@@ -75,8 +72,6 @@ class FileSelectorGUI(tk.Toplevel):
         self.compress_selected_button = ctk.CTkButton(self, text="Compress Selected", command=self.compress_selected)
         self.compress_selected_button.pack(pady=8)
 
-        self.selected_files = []  # To store selected files' filenames
-
     def select_directory(self):
         directory_path = filedialog.askdirectory()
         if directory_path:
@@ -87,38 +82,25 @@ class FileSelectorGUI(tk.Toplevel):
         file_type = self.file_type_var.get()
 
         if file_type not in self.FILE_EXTENSIONS:
-            self.file_frame.destroy()
-            self.file_frame = tk.Frame(self)
-            self.file_frame.pack(pady=10)
+            self.file_list.delete(0, tk.END)
+            self.file_list.insert(tk.END, "Invalid file type.")
             self.total_space_label.config(text="Total Space: ")
             return
 
         extensions = self.FILE_EXTENSIONS[file_type]
         if not os.path.exists(directory_path):
-            self.file_frame.destroy()
-            self.file_frame = tk.Frame(self)
-            self.file_frame.pack(pady=10)
+            self.file_list.delete(0, tk.END)
+            self.file_list.insert(tk.END, "Directory not found.")
             self.total_space_label.config(text="Total Space: ")
             return
 
-        self.file_frame.destroy()
-        self.file_frame = tk.Frame(self)
-        self.file_frame.pack(pady=10)
-
+        self.file_list.delete(0, tk.END)
         total_space = 0
-        self.selected_files = []
-
-        def scan_files_and_folders(directory):
-            nonlocal total_space
-            for filename in os.listdir(directory):
-                filepath = os.path.join(directory, filename)
-                if os.path.isfile(filepath) and os.path.splitext(filename)[1].lower() in extensions:
-                    self.file_list.insert(tk.END, filename)
-                    total_space += os.path.getsize(filepath)
-                elif os.path.isdir(filepath):
-                    scan_files_and_folders(filepath)
-
-        scan_files_and_folders(directory_path)
+        for filename in os.listdir(directory_path):
+            filepath = os.path.join(directory_path, filename)
+            if os.path.isfile(filepath) and os.path.splitext(filename)[1].lower() in extensions:
+                self.file_list.insert(tk.END, filename)
+                total_space += os.path.getsize(filepath)
 
         self.total_space_label.config(text=f"Total Space: {self.format_bytes(total_space)}")
 
@@ -130,11 +112,6 @@ class FileSelectorGUI(tk.Toplevel):
 
     def select_all(self):
         self.file_list.select_set(0, tk.END)
-        self.file_list.bind("<<ListboxSelect>>", self.update_selected_files)
-
-    def update_selected_files(self, event):
-        # Clear the selected_files list and populate it with the filenames of selected items
-        self.selected_files = [self.file_list.get(index) for index in self.file_list.curselection()]
 
     def delete_selected(self):
         selected_indices = self.file_list.curselection()
@@ -145,38 +122,14 @@ class FileSelectorGUI(tk.Toplevel):
         confirm_delete = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {len(selected_indices)} files?")
         if confirm_delete:
             directory_path = self.directory_var.get()
-            successfully_deleted = []
-            total_space_freed = 0
-
-            for filename in self.selected_files[:]:  # Copying the list to avoid modification during iteration
+            for index in reversed(selected_indices):
+                filename = self.file_list.get(index)
                 filepath = os.path.join(directory_path, filename)
                 try:
-                    file_size = os.path.getsize(filepath)
                     os.remove(filepath)
-                    successfully_deleted.append(filename)
-                    self.selected_files.remove(filename)
-                    total_space_freed += file_size
+                    self.file_list.delete(index)
                 except Exception as e:
-                    pass  # Suppressing the error message for individual file deletion
-
-            if successfully_deleted:
-                success_message = f"{len(successfully_deleted)} files deleted successfully."
-                if total_space_freed > 0:
-                    success_message += f"\nTotal space freed: {self.format_bytes(total_space_freed)}"
-                messagebox.showinfo("Deletion Successful", success_message)
-            else:
-                messagebox.showinfo("Deletion Successful", "Files deleted successfully")
-            
-        
-        for index in reversed(selected_indices):
-            self.selected_files.delete(index)
-
-
-    def format_bytes(self, bytes_val):
-        for unit in ['', 'KB', 'MB', 'GB', 'TB']:
-            if bytes_val < 1024.0:
-                return f"{bytes_val:.2f} {unit}"
-            bytes_val /= 1024.0
+                    messagebox.showerror("Error", f"Failed to delete {filename}: {e}")
 
     def compress_selected(self):
         selected_indices = self.file_list.curselection()
@@ -204,16 +157,15 @@ class FileSelectorGUI(tk.Toplevel):
             messagebox.showinfo("Success", "Files compressed successfully.")
         else:
             messagebox.showwarning("Warning", "Compression canceled.")
-   
-def main():
-    root = tk.Tk()
-    root.title("File Selector App")
-    
-    # Create a FileSelectorGUI instance
-    file_selector = FileSelectorGUI()
-    
-    # Start the main event loop
-    root.mainloop()
+
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     root.title("File System Manager")
+#     root.geometry(f"{500}x500")
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    root.title("File System Manager")
+
+    file_selector_gui = FileSelectorGUI()
+    root.mainloop()

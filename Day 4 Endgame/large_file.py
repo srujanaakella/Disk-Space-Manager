@@ -24,7 +24,7 @@ class LargeFile:
     def __init__(self, root):
         self.root = root
         self.root.title("File System Visualizer")
-        self.root.geometry("500x400")
+        self.root.geometry("490x520")
 
         self.main_frame = tk.Frame(self.root, bg="lightblue")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
@@ -35,7 +35,7 @@ class LargeFile:
         self.threshold_entry = tk.Entry(self.main_frame)
         self.threshold_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        self.label = tk.Label(self.main_frame, text="Select Directory:", bg="lightblue", font=("Montserrat", 13))
+        self.label = tk.Label(self.main_frame, text="Select Directory:", bg="lightblue", font=("Montserrat"))
         self.label.grid(row=1, column=0, padx=5, pady=5)
 
         self.browse_button = ctk.CTkButton(self.main_frame, text="Browse", command=self.ask_directory)

@@ -1,5 +1,5 @@
-# from files_visualizer import FileSystemTree, visualize, filedialog
-# from custom_msg import CustomMessageBox,show_custom_message_box
+from files_visualizer import FileSystemTree, visualize, filedialog
+from custom_msg import CustomMessageBox,show_custom_message_box
 from visualisation_piechart import DiskSpaceVisualizerGUI
 from temp_file_manager import TempFileManager
 from tkinter import filedialog, messagebox
@@ -88,11 +88,8 @@ if __name__ == "__main__":
     free_button = ctk.CTkButton(root,text="Display Disk Space", command=disk_space, font= ("Montserrat", 13))
     free_button.pack(padx=10,pady=10)
 
-    visualize_button = ctk.CTkButton(root, text="Visualize File Space", command=display_disk_utilization, font= ("Montserrat", 13))
-    visualize_button.pack(padx=10,pady=10)
-
-    duplicate_button=ctk.CTkButton(root,text="Find Duplicate Files",command=check_dup, font= ("Montserrat", 13))
-    duplicate_button.pack(padx=10,pady=10)
+    visualize_button = ctk.CTkButton(root, text="Visualize Files", command=display_disk_utilization, font= ("Montserrat", 13))
+    visualize_button.pack(padx=10,pady=10) 
 
     file_visualizer_button = ctk.CTkButton(root, text="Find Large Files", command=show_large, font= ("Montserrat", 13))
     file_visualizer_button.pack(padx=10,pady=10)
@@ -103,11 +100,14 @@ if __name__ == "__main__":
     sametype_button=ctk.CTkButton(root,text="Find File Type",command=same_file, font= ("Montserrat", 13))
     sametype_button.pack(pady=10)
 
+    temp_button = ctk.CTkButton(root, text="Remove Temp Files", command=remove_temp_files, font=("Montserrat", 13))
+    temp_button.pack(pady=10)
+
     compress_button = ctk.CTkButton(root, text="Compress Files", command=compress, font=("Montserrat", 13))
     compress_button.pack(pady=10)
 
-    temp_button = ctk.CTkButton(root, text="Remove Temp Files", command=remove_temp_files, font=("Montserrat", 13))
-    temp_button.pack(pady=10)
+    duplicate_button=ctk.CTkButton(root,text="Find Duplicate Files",command=check_dup, font= ("Montserrat", 13))
+    duplicate_button.pack(padx=10,pady=10)
 
 
     root.mainloop()
